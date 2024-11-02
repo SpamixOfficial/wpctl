@@ -1,0 +1,8 @@
+[package]
+name = "wpctl"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-4-Clause"
+
+[dependencies]
+cursive = "0.21.1"
