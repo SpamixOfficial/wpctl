@@ -6,3 +6,4 @@ license = "BSD-4-Clause"
 
 [dependencies]
 cursive = "0.21.1"
+dirs = "5.0.1"
