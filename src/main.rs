@@ -1,14 +1,18 @@
 use std::{env::args, process::exit};
 
-mod ui;
+
+mod app;
+mod ui; // Note that this file needs to be imported for any ui functions to be available!!
+        
 
 fn main() {
     // Handle all of our possible arguments
     handle_args();
 
     // Creates the cursive root - required for every application.
-    let mut app = ui::App::new();
+    let mut app = app::App::new();
     app.init();
+    app.ui_init();
 }
 
 fn handle_args() {
