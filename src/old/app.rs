@@ -1,13 +1,16 @@
 /// Handles the app, UI is handled by the ui.rs file
+use cursive::{
+    views::{Dialog, TextView},
+    CursiveRunnable,
+};
 use std::{fs::create_dir_all, path::PathBuf, process::exit};
-use ratatui::DefaultTerminal;
 
-use crate::ui::Page;
+use crate::ui::AppViews;
 
 pub struct App {
     pub config: PathBuf,
     pub approot: PathBuf,
-    pub current_page: Page,
+    pub app: CursiveRunnable,
     pub is_setup: bool,
 }
 
@@ -15,9 +18,9 @@ impl App {
     pub fn new() -> Self {
         // Creates the cursive root - required for every application.
         Self {
+            app: cursive::default(),
             config: dirs::config_dir().unwrap().join("wpctl"),
             approot: dirs::data_dir().unwrap().join("wpctl"),
-            current_page: Page::default(),
             is_setup: false,
         }
     }

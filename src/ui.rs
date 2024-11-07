@@ -1,91 +1,97 @@
-use crate::app::App;
-use cursive::{
-    view::Resizable,
-    views::{Button, Dialog, DummyView, LinearLayout, TextView},
-    Cursive, CursiveRunnable, View,
+use std::{default, io::{self, Error, ErrorKind}, process::exit};
+
+use ratatui::{
+    crossterm::event::{self, KeyCode, KeyEventKind},
+    layout::{Constraint, Flex, Layout, Rect},
+    style::{Style, Stylize},
+    text::{Line, Text},
+    widgets::{Block, BorderType, Borders, Paragraph, Widget},
+    DefaultTerminal, Frame,
 };
-use std::path::PathBuf;
 
-// we use a struct for sorting, make it look nice essentially
-pub struct AppViews {}
+use crate::app::App;
 
-impl AppViews {
-    /// Install view
-    pub fn setupView() -> Dialog {
-        // Create config && create dirs
-        fn view_2(s: &mut Cursive) {
-            s.pop_layer();
-            let new_layer = Dialog::new().content(TextView::new("The following actions will be done:\"\n- Create all directories\n- Create all configurations")).button("Install", |s| install(s)).button("Quit", |s| self::AppViews::are_u_sure(s));
-            s.add_layer(new_layer);
-        }
+#[derive(Debug, Default)]
+pub enum Page {
+    #[default]
+    Default,
+    SetupWelcome,
+    SetupPage1,
+}
 
-        fn install(s: &mut Cursive) {
-            match App::install(App::config_dir(), App::approot()) {
-                Ok(_) => {
-                    s.add_layer(
-                        Dialog::new()
-                            .title("Install Status")
-                            .content(TextView::new("Success!\nRestart the app for the install to take effect"))
-                            .button("Finish", |s| s.quit()),
-                    );
+pub fn run(mut app: App) -> io::Result<()> {
+    let mut terminal: DefaultTerminal = ratatui::init();
+    loop {
+        pre_draw_handle(&mut app)?;
+
+        terminal.draw(|frame| {
+            // Get callback function and call function, looks cursed I know
+            app.current_page.func()(frame)
+        })?;
+    
+        match post_draw_handle(&mut app) {
+            Err(e) => {
+                if e.to_string() == "brk" {
+                    return Ok(())
                 }
-                Err(e) => {
-                    s.add_layer(
-                        Dialog::new()
-                            .title("Install Status")
-                            .content(TextView::new(format!(
-                                "Installation Failed:\n{}",
-                                e.to_string()
-                            )))
-                            .button("Quit", |s| s.quit()),
-                    );
-                }
-            }
+                return Err(e)
+            },
+            _ => ()
         }
-
-        // Buttons for intro dialog
-        let buttons = LinearLayout::horizontal()
-            .child(Button::new("Continue", |s| view_2(s)))
-            .child(Button::new("Quit", |s| s.quit()));
-        // Intro dialog stuff
-        Dialog::around(LinearLayout::vertical().child(TextView::new("Welcome!\n\nIf you do not want to set up the application at the moment simply choose \"Quit\" down below or click \'q\'")).child(buttons)).title("wpctl setup")
-    }
-
-    /// App/Main menu view
-    pub fn appView() -> TextView {
-        TextView::new("I am the appview")
-    }
-    /// Install wallpaper view
-    pub fn installWpView() -> DummyView {
-        DummyView::new()
-    }
-
-    /// Are you sure you want to exit?
-    pub fn are_u_sure(s: &mut Cursive) {
-        s.add_layer(
-            Dialog::new()
-                .content(TextView::new("You sure you want to exit?"))
-                .button("Yes", |s| s.quit())
-                .button("No", |s| {
-                    s.pop_layer();
-                }),
-        );
     }
 }
 
-impl App {
-    pub fn ui_init(&mut self) {
-        self.add_all_global_callbacks();
-        if !self.is_setup {
-            self.app.add_layer(AppViews::setupView());
-        } else {
-            self.app.add_layer(AppViews::appView());
-        }
-
-        self.app.run();
+fn pre_draw_handle(app: &mut App) -> io::Result<()> {
+    // Check if app is set up
+    if !app.is_setup {
+        app.current_page = Page::SetupWelcome
     }
 
-    fn add_all_global_callbacks(&mut self) {
-        self.app.add_global_callback('q', |s| s.quit());
+    Ok(())
+}
+
+fn post_draw_handle(app: &mut App) -> io::Result<()> {
+    if let event::Event::Key(key) = event::read()? {
+        if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
+            return Err(Error::other("brk"));
+        }
+    }
+    return Ok(())
+}
+
+impl Page {
+    fn func(&self) -> fn(&mut Frame) {
+        let func = match self {
+            Self::SetupWelcome => Self::page_setup_welcome,
+            _ => Self::page_default,
+        };
+        return func;
+    }
+
+    fn page_default(frame: &mut Frame) {
+        frame.render_widget(
+            Paragraph::new("Wpctl is started...").centered(),
+            frame.area(),
+        );
+    }
+
+    fn page_setup_welcome(frame: &mut Frame) {
+        let text = Text::from(
+        "Hey!\n\n\n\nLooks like you haven't went through the setup yet!\nPress left to continue",
+    );
+        let [mut area] = Layout::horizontal([Constraint::Length((text.width() as u16) + 5)])
+            .flex(Flex::Center)
+            .areas(frame.area());
+        [area] = Layout::vertical([Constraint::Length(20 as u16)])
+            .flex(Flex::Center)
+            .areas(area);
+
+        let block = Block::new()
+            .title_top(Line::from("Setup wpctl").centered())
+            .title_bottom(Line::from("Left to continue").centered())
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded);
+
+        frame.render_widget(Paragraph::new(text).centered().block(block), area);
     }
 }

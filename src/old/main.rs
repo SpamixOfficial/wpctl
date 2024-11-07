@@ -2,9 +2,7 @@ use std::{env::args, process::exit};
 
 
 mod app;
-mod ui;
-// Old, early cursive TUI thingys, moving to ratatui now :-)
-//mod old/ui; // Note that this file needs to be imported for any ui functions to be available!!
+mod ui; // Note that this file needs to be imported for any ui functions to be available!!
         
 
 fn main() {
@@ -14,19 +12,7 @@ fn main() {
     // Creates the cursive root - required for every application.
     let mut app = app::App::new();
     app.init();
-    match ui::run(app) {
-        Err(e) => {
-            eprintln!("Uh oh! Something went wrong with the ui. Exiting...\n{}", e.to_string());
-            ratatui::restore();
-            exit(1)
-        },
-        _ => {
-            // reset terminal and restore
-            ratatui::restore();
-        }
-    }
-    // old stuff again 
-    //app.ui_init();
+    app.ui_init();
 }
 
 fn handle_args() {
