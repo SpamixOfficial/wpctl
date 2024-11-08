@@ -4,6 +4,7 @@ use std::process::exit;
 
 mod app;
 mod ui;
+mod backend;
 // Old, early cursive TUI thingys, moving to ratatui now :-)
 //mod old/ui; // Note that this file needs to be imported for any ui functions to be available!!
 
@@ -58,7 +59,7 @@ fn handle_cmd(args: Args, app: &App) {
 }
 
 fn command_install(app: &App) {
-    match App::install(app.config.clone(), app.approot.clone()) {
+    match App::install(app.config_path.clone(), app.approot.clone()) {
         Err(e) => {
             eprintln!("[*] Error during installation: {}", e);
             exit(1);

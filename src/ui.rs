@@ -10,9 +10,9 @@ use ratatui::{
 
 use crate::app::App;
 
-pub fn run(mut app: App) -> io::Result<()> {
+pub fn run(mut app: App) -> anyhow::Result<()> {
     if !app.is_setup {
-        setup::run(app.config.clone(), app.approot.clone())?;
+        setup::run(app.config_path.clone(), app.approot.clone())?;
         ratatui::restore();
         return Ok(())
     }
@@ -33,22 +33,22 @@ pub fn run(mut app: App) -> io::Result<()> {
                     return Ok(());
                 }
                 ratatui::restore();
-                return Err(e);
+                return Err(anyhow::Error::from(e));
             }
             _ => (),
         }
     }
 }
 
-fn pre_draw_handle(app: &mut App) -> io::Result<()> {
+fn pre_draw_handle(app: &mut App) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn post_draw_handle(app: &mut App) -> io::Result<()> {
+fn post_draw_handle(app: &mut App) -> anyhow::Result<()> {
     if let event::Event::Key(key) = event::read()? {
         if key.kind == KeyEventKind::Press {
             match key.code {
-                KeyCode::Char('q') => return Err(Error::other("brk")), 
+                KeyCode::Char('q') => return Err(anyhow::Error::from(Error::other("brk"))), 
                 _ => (),
             }
         }

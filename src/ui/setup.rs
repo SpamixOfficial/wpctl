@@ -19,7 +19,7 @@ struct SetupSession {
     current_page: SetupPage,
 }
 
-pub fn run(config: PathBuf, approot: PathBuf) -> io::Result<()> {
+pub fn run(config: PathBuf, approot: PathBuf) -> anyhow::Result<()> {
     let mut terminal: DefaultTerminal = ratatui::init();
     let mut setup_session = SetupSession {
         config,
@@ -45,11 +45,11 @@ pub fn run(config: PathBuf, approot: PathBuf) -> io::Result<()> {
     }
 }
 
-fn post_draw_handle(app: &mut SetupSession) -> io::Result<()> {
+fn post_draw_handle(app: &mut SetupSession) -> anyhow::Result<()> {
     if let event::Event::Key(key) = event::read()? {
         if key.kind == KeyEventKind::Press {
             match key.code {
-                KeyCode::Char('q') => return Err(Error::other("brk")),
+                KeyCode::Char('q') => return Err(anyhow::Error::from(Error::other("brk"))),
                 KeyCode::Right => {
                     if app.current_page == SetupPage::SetupPage1 {
                         App::install(app.config.clone(), app.approot.clone())?;
