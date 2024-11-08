@@ -5,6 +5,7 @@ edition = "2021"
 license = "BSD-4-Clause"
 
 [dependencies]
+clap = { version = "4.5.20", features = ["derive"] }
 #cursive = "0.21.1"
 dirs = "5.0.1"
 ratatui = "0.29.0"

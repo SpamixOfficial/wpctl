@@ -17,13 +17,9 @@ fn main() {
     match ui::run(app) {
         Err(e) => {
             eprintln!("Uh oh! Something went wrong with the ui. Exiting...\n{}", e.to_string());
-            ratatui::restore();
             exit(1)
         },
-        _ => {
-            // reset terminal and restore
-            ratatui::restore();
-        }
+        _ => ()
     }
     // old stuff again 
     //app.ui_init();
