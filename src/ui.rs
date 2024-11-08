@@ -1,17 +1,10 @@
 pub mod setup;
+pub mod pages;
 
-use std::{
-    default,
-    io::{self, Error, ErrorKind},
-    process::exit,
-};
+use std::io::{self, Error};
 
 use ratatui::{
     crossterm::event::{self, KeyCode, KeyEventKind},
-    layout::{Constraint, Flex, Layout, Rect},
-    style::{Color, Style, Stylize},
-    text::{Line, Text},
-    widgets::{Block, BorderType, Borders, Paragraph, Widget},
     DefaultTerminal, Frame,
 };
 
@@ -73,16 +66,10 @@ pub enum Page {
 
 impl Page {
     fn func(&self) -> fn(&mut Frame) {
+        // Add all pages here!!
         let func = match self {
-            _ => Self::page_default,
+            Self::Default => Self::page_main,
         };
         return func;
     } 
-
-    fn page_default(frame: &mut Frame) {
-        frame.render_widget(
-            Paragraph::new("Wpctl is started...").centered(),
-            frame.area(),
-        );
-    }
 }
