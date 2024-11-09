@@ -7,6 +7,7 @@ use serde::Deserialize;
 pub struct RepositoryManifest {
     pub name: String,
     pub pretty_url: String,
+    pub git_url: String,
     pub identifier: String,
 }
 
