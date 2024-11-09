@@ -1,4 +1,4 @@
 | Category | Href      |
 | -------- | --------- |
-| Config   | [](./CONFIG.md) |
-| Repository | [](./REPOSITORY.md) |
+| Config   | [CONFIG](./CONFIG.md) |
+| Repository | [REPOSITORY](./REPOSITORY.md) |
