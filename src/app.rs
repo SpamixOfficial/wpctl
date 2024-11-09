@@ -2,7 +2,7 @@
 use std::{
     fs::{create_dir_all, File},
     io::Write,
-    path::PathBuf
+    path::PathBuf, thread::sleep, time::Duration,
 };
 
 use crate::{backend::{config::Config, wallpaper::WpManifest}, ui::Page};
@@ -36,6 +36,8 @@ impl App {
             Ok(x) => Some(x),
             Err(e) => {
                 eprintln!("[*] Error during configuration loading: {e}");
+                eprintln!("[*] Program has been put into sleep for 5 seconds. Press CTRL+C now to exit the program. \n\n!!! This error and sleep will be present until you fix your configuration !!!");
+                sleep(Duration::from_secs(5));
                 None
             }
         };

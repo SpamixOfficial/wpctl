@@ -7,7 +7,11 @@ use anyhow;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub repositories: Vec<String>
+    // items to load per chunk
+    pub load_chunk: usize,
+    // load file size from remote automatically, worth disabling by default in case you are in a
+    // country which does not like certain domains
+    pub auto_load_file_size: bool
 }
 
 impl Config {
@@ -18,7 +22,7 @@ impl Config {
     }
 
     pub fn default_config() -> String {
-        return r"repositories = []
-".to_string()
+        return r"load_chunk = 100
+auto_load_file_size = false".to_string()
     }
 }
