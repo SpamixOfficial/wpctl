@@ -5,6 +5,7 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize)]
 pub struct WpManifest {
     pub name: String,
+    pub description: String,
     pub author: Vec<String>,
     pub maintainer: String,
     pub thumbnail_url: String,
@@ -34,5 +35,7 @@ pub enum WpSizes {
     #[serde(rename = "32:9")]
     X32x9,
     #[serde(rename = "4:1")]
-    X4x1
+    X4x1,
+    #[serde(rename = "21:9")]
+    X21x9
 }

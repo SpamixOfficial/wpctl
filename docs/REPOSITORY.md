@@ -16,7 +16,7 @@ Example file path: `$HOME/.config/wpctl/repositories/default_repository.toml`
 
 ### Fields
 
-**NOTE: There are no defaults, so every value must be explicitly set**
+**NOTE: There are no defaults, so every value not marked as optional must be explicitly set**
 
 | Field      | Type       | Description                                                                                                                                              |
 | ---------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -24,6 +24,7 @@ Example file path: `$HOME/.config/wpctl/repositories/default_repository.toml`
 | pretty_url | string/url | The "pretty url" of the repository, an url that the user can visit. Can be a website, or a link to a github repository or anything really that is an url |
 | git_url    | string/url | The git url, should point to the remote git repository containing wallpaper manifests                                                                    |
 | identifier | string     | Unique identifier, ex. `se.spamix.wprepo` or `com.example.coolrepo`                                                                                      |
+| version    | string     | Manifest version, used for checking compability                                                                                                          |
 
 ## Wallpaper Manifest
 
@@ -36,16 +37,17 @@ The manifests should use the toml filetype, follow the specification below and b
 | Field         | Type       | Description                                                      |
 | ------------- | ---------- | ---------------------------------------------------------------- |
 | name          | string     | Name of the package                                              |
-| author        | [string]   | Author/authors of the package                                    |
+| description   | string     | Description of the package                                       |
+| author        | [string]   | Author/authors of the wallpaper                                  |
 | maintainer    | string     | Name of package maintainer                                       |
 | thumbnail_url | string/url | Link to thumbnail_url of package, shown to users in detail panel |
-| download_url  | string/url | Link to package zip file                                         |
+| download_url  | string/url | Link to package zip or image file                                |
 | sizes         | [WpSize]   | What aspect ratios the wallpaper support/work on                 |
 
 For type references see the [README](./README.md)
 
 ## Important notes
 
-The download_url, or the package which is installed MUST ALWAYS be a zip file, even if it is a single image file.
+The download_url must point to an image (not webp) or zip file. In case of multi-image zip file all of the images will be installed under that package name.
 
 The wallpaper manifests may **not** be named `manifest.toml` as this is the repository manifest.
