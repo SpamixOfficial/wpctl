@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    backend::{config::Config, repository::RepositoryManifest, wallpaper::WpManifest},
+    backend::{config::Config, repository::{Remote, RepositoryManifest}, wallpaper::WpManifest},
     ui::Page,
     utils::ehandle,
 };
@@ -20,7 +20,7 @@ pub struct App {
     pub current_page: Page,
     pub is_setup: bool,
     pub wp_items: Vec<WpManifest>,
-    pub repositories: Vec<RepositoryManifest>,
+    pub repositories: Vec<Remote>,
 }
 
 impl App {
@@ -49,9 +49,10 @@ impl App {
                 e
             }),
         );
-
+        
         if let Some(rp) = repositories {
-            self.repositories = rp
+            let remotes: Vec<Remote> = rp.iter().map(|f| f.to_remote()).collect();
+            self.repositories = remotes
         }
         // If not Some just return because something went wrong and mutating repositories at this
         // time is not good
@@ -68,7 +69,7 @@ impl App {
                 e
             }),
         );
-        // Load repositories
+        // Load repositories (as remotes)
         self.reload_repositories();
 
         self.is_setup = self.is_setup();

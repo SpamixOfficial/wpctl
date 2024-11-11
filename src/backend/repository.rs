@@ -1,7 +1,10 @@
 use std::{fs, io::Read, path::PathBuf};
 
+use git2::{Direction, Remote as git2_remote};
 // Responsible for all repository related stuff, such as networking, reading remote host, etc.
 use serde::Deserialize;
+
+use super::wallpaper::WpManifest;
 
 /// Repository manifest file, found locally
 #[derive(Deserialize, Debug, Clone)]
@@ -13,10 +16,10 @@ pub struct RepositoryManifest {
     pub version: String,
 }
 
-/// Repository data, dynamic, not read from manifest but rather from remote
+/// Repository data and access object
 #[derive(Debug)]
 pub struct Remote {
-    pub remote_url: String,
+    pub url: String,
     pub nitems: usize,
     pub manifest: RepositoryManifest,
 }
@@ -40,12 +43,44 @@ impl RepositoryManifest {
         Ok(return_vec)
     }
 
+    pub fn add_repository(config_dir: &PathBuf, url: String) -> anyhow::Result<()> {
+        let rp = reqwest::blocking::get(url)?.text()?;
+        // TODO: FINISH TOMORROW
+        Ok(())
+    }
+
     pub fn to_remote(&self) -> Remote {
-        // TODO: Get nitems here from Remote
         return Remote {
-            remote_url: self.pretty_url.clone(),
+            url: self.git_url.clone(),
             nitems: 0,
             manifest: self.clone(),
         };
+    }
+}
+
+impl Remote {
+    /// Updates nitems
+    pub fn len_packages(&mut self) -> anyhow::Result<()> {
+        let mut remote = git2_remote::create_detached(self.url.as_str())?;
+        remote.connect(Direction::Fetch)?;
+        self.nitems = remote.list()?.len();
+        remote.disconnect()?;
+        Ok(())
+    }
+
+    pub fn get_package_names(&self) -> anyhow::Result<Vec<String>> {
+        let mut remote = git2_remote::create_detached(self.url.as_str())?;
+        remote.connect(Direction::Fetch)?;
+        let items: Vec<String> = remote
+            .list()?
+            .iter()
+            .map(|x| x.name().to_string())
+            .filter(|x: &String| {
+                x.ends_with("toml") && !x.contains("/") && x != &"manifest.toml".to_string()
+                // Filter for toml files, in root, which isnt manifest.toml
+            })
+            .collect();
+        remote.disconnect()?;
+        Ok(items)
     }
 }
