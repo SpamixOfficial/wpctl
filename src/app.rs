@@ -7,6 +7,8 @@ use std::{
     time::Duration,
 };
 
+use anyhow::anyhow;
+
 use crate::{
     backend::{config::Config, repository::{Remote, RepositoryManifest}, wallpaper::WpManifest},
     ui::Page,
@@ -126,5 +128,36 @@ impl App {
         }
 
         return true;
+    }
+
+    /// Basically frontend for backend function, backend functions should never be directly be used
+    /// by frontend so this function is Basically a layer
+    pub fn add_repo(&mut self, url: String) -> anyhow::Result<()> {
+        RepositoryManifest::add(&self.config_path, url)?;
+        self.reload_repositories();
+        Ok(())
+    }
+
+    pub fn remove_repo(&mut self, manifest: RepositoryManifest) -> anyhow::Result<()> {
+        manifest.remove(&self.config_path)?;
+        self.reload_repositories();
+        Ok(())
+    }
+
+    /// Like remove_repo but uses identifier to get the manifest
+    pub fn remove_repo_id(&mut self, id: String) -> anyhow::Result<()> {
+        let mut manifest: Option<RepositoryManifest> = None;
+        for m in &self.repositories {
+            if m.manifest.identifier == id {
+                manifest = Some(m.manifest.clone());
+            }
+        }; 
+
+        if let Some(m) = manifest {
+            self.remove_repo(m)?;
+            return Ok(());
+        } else {
+            return Err(anyhow!("No such identifier"));
+        };
     }
 }

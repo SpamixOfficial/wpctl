@@ -22,6 +22,14 @@ struct Args {
 enum Command {
     #[command(long_about = "Run the installer in cli")]
     Install,
+    #[command(long_about = "Add a repository from an URL pointing to a repository manifest")]
+    AddRepo {
+        url: String
+    },
+    #[command(long_about = "Remove a local repository from an identifier")]
+    RemoveRepo {
+        identifier: String
+    }
 }
 
 fn main() {
@@ -34,7 +42,7 @@ fn main() {
     app.init();
 
     // We actually parse our commands here before the ui is init
-    handle_cmd(args, &app);
+    handle_cmd(args, &mut app);
 
     match ui::run(app) {
         Err(e) => {
@@ -50,16 +58,17 @@ fn main() {
     //app.ui_init();
 }
 
-fn handle_cmd(args: Args, app: &App) {
+fn handle_cmd(args: Args, app: &mut App) {
     if let Some(command) = args.command {
-        let func: fn(&App) = match command {
-            Command::Install => command_install,
+        match command {
+            Command::Install => command_install(app),
+            Command::AddRepo { url } => add_repo(app, url),
+            Command::RemoveRepo { identifier } => remove_repo(app, identifier),
         };
-        func(app);
     }
 }
 
-fn command_install(app: &App) {
+fn command_install(app: &mut App) {
     match App::install(app.config_path.clone(), app.approot.clone()) {
         Err(e) => {
             eprintln!("[*] Error during installation: {}", e);
@@ -70,4 +79,30 @@ fn command_install(app: &App) {
             exit(0);
         }
     };
+}
+
+fn add_repo(app: &mut App, url: String) {
+    match app.add_repo(url) {
+        Err(e) => {
+            eprintln!("[*] Error during repository addition: {}", e);
+            exit(1);
+        }
+        _ => {
+            println!("[*] Repository was added successfully!");
+            exit(0);
+        }
+    }
+}
+
+fn remove_repo(app: &mut App, identifier: String) {
+    match app.remove_repo_id(identifier) {
+        Err(e) => {
+            eprintln!("[*] Error during repository removal: {}", e);
+            exit(1);
+        }
+        _ => {
+            println!("[*] Repository was removed successfully!");
+            exit(0);
+        }
+    }
 }
