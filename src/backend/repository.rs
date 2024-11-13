@@ -1,5 +1,10 @@
-use std::{fs::{self, remove_file, File}, io::{Read, Write}, path::PathBuf};
+use std::{
+    fs::{self, remove_file, File},
+    io::{Read, Write},
+    path::PathBuf,
+};
 
+use anyhow::anyhow;
 use git2::{Direction, Remote as git2_remote};
 // Responsible for all repository related stuff, such as networking, reading remote host, etc.
 use serde::Deserialize;
@@ -35,7 +40,7 @@ impl RepositoryManifest {
             // unwrap or continue on loop
             if file.is_err() {
                 continue;
-        }
+            }
             let file_path = file.unwrap().path();
             let content = fs::read_to_string(file_path)?;
             return_vec.push(toml::from_str(&content)?);
@@ -48,16 +53,30 @@ impl RepositoryManifest {
     /// Repositories should be reloaded after this, please use frontend function for cleaner
     /// interface
     pub fn remove(&self, config_dir: &PathBuf) -> anyhow::Result<()> {
-        let location: PathBuf = config_dir.join("repositories").join(format!("{}.toml", self.identifier));
+        let location: PathBuf = config_dir
+            .join("repositories")
+            .join(format!("{}.toml", self.identifier));
         remove_file(location)?;
-        return Ok(())
+        return Ok(());
     }
 
     pub fn add(config_dir: &PathBuf, url: String) -> anyhow::Result<()> {
         let rp: String = reqwest::blocking::get(url)?.text()?;
         let manifest: Self = toml::from_str(&rp)?;
-        let manifest_path: PathBuf = config_dir.join("repositories").join(format!("{}.toml", manifest.identifier));
-        let mut manifest_file: File = File::options().write(true).create(true).truncate(true).open(manifest_path)?;
+
+        // Check if identifier is already installed
+        if Self::identifiers(config_dir)?.contains(&manifest.identifier) {
+            return Err(anyhow!("Repository is already installed!"));
+        };
+
+        let manifest_path: PathBuf = config_dir
+            .join("repositories")
+            .join(format!("{}.toml", manifest.identifier));
+        let mut manifest_file: File = File::options()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(manifest_path)?;
         manifest_file.write(rp.as_bytes())?;
         Ok(())
     }
@@ -68,6 +87,28 @@ impl RepositoryManifest {
             nitems: 0,
             manifest: self.clone(),
         };
+    }
+
+    // Needs to work without access to the app initialized, so needs to be a little longer
+    /// Get identifiers of repositories
+    pub fn identifiers(config_dir: &PathBuf) -> anyhow::Result<Vec<String>> {
+        let repo_dir_iter = fs::read_dir(config_dir.join("repositories"))?;
+
+        // Initialize our return vector
+        let mut return_vec: Vec<String> = vec![];
+
+        for file in repo_dir_iter {
+            // unwrap or continue on loop
+            if file.is_err() {
+                continue;
+            }
+            let name = file.unwrap().file_name().into_string();
+            if name.is_err() {
+                continue;
+            }
+            return_vec.push(name.unwrap().replace(".toml", ""));
+        }
+        Ok(return_vec)
     }
 }
 

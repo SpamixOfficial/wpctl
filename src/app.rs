@@ -160,4 +160,8 @@ impl App {
             return Err(anyhow!("No such identifier"));
         };
     }
+
+    pub fn identifiers(config_dir: &PathBuf) -> anyhow::Result<Vec<String>> {
+        RepositoryManifest::identifiers(config_dir)
+    }
 }

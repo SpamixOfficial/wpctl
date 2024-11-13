@@ -1,10 +1,11 @@
 use app::App;
 use clap::{Parser, Subcommand};
+use clap_complete::{ArgValueCompleter, CompletionCandidate};
 use std::process::exit;
 
 mod app;
-mod ui;
 mod backend;
+mod ui;
 mod utils;
 // Old, early cursive TUI thingys, moving to ratatui now :-)
 //mod old/ui; // Note that this file needs to be imported for any ui functions to be available!!
@@ -23,13 +24,16 @@ enum Command {
     #[command(long_about = "Run the installer in cli")]
     Install,
     #[command(long_about = "Add a repository from an URL pointing to a repository manifest")]
-    AddRepo {
-        url: String
-    },
+    AddRepo { url: String },
     #[command(long_about = "Remove a local repository from an identifier")]
     RemoveRepo {
-        identifier: String
-    }
+        #[arg(add = ArgValueCompleter::new(identifier_clap_completer), help = "Package to remove, by identifier")]
+        identifier: String,
+    },
+    #[command(
+        long_about = "Get repository identifiers. Use the repositories command for repository information"
+    )]
+    Identifiers,
 }
 
 fn main() {
@@ -64,6 +68,7 @@ fn handle_cmd(args: Args, app: &mut App) {
             Command::Install => command_install(app),
             Command::AddRepo { url } => add_repo(app, url),
             Command::RemoveRepo { identifier } => remove_repo(app, identifier),
+            Command::Identifiers => identifiers(app),
         };
     }
 }
@@ -94,6 +99,21 @@ fn add_repo(app: &mut App, url: String) {
     }
 }
 
+fn identifiers(app: &mut App) {
+    match App::identifiers(&app.config_path) {
+        Err(e) => {
+            eprintln!("[*] Error during identifers retrieval: {}", e);
+            exit(1);
+        }
+        Ok(x) => {
+            for i in x {
+                println!("{i}");
+            }
+            exit(0);
+        }
+    };
+}
+
 fn remove_repo(app: &mut App, identifier: String) {
     match app.remove_repo_id(identifier) {
         Err(e) => {
@@ -105,4 +125,27 @@ fn remove_repo(app: &mut App, identifier: String) {
             exit(0);
         }
     }
+}
+
+// Custom clap completer because identifiers are nice to have complete on
+fn identifier_clap_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
+    let mut completions = vec![];
+    let Some(current) = current.to_str() else {
+        return completions;
+    };
+
+    let identifiers = match App::identifiers(&dirs::config_dir().unwrap().join("wpctl")) {
+        Ok(x) => x,
+        Err(e) => {
+            eprintln!("Error when completing: {e}");
+            return completions;
+        }
+    };
+
+    for id in identifiers {
+        if id.contains(current) {
+            completions.push(CompletionCandidate::new(id));
+        }
+    }
+    completions
 }
