@@ -44,7 +44,6 @@ fn main() {
     // Creates the root - required for every application.
     let mut app = App::new();
     app.init();
-
     // We actually parse our commands here before the ui is init
     handle_cmd(args, &mut app);
 
@@ -134,7 +133,7 @@ fn identifier_clap_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandida
         return completions;
     };
 
-    let identifiers = match App::identifiers(&dirs::config_dir().unwrap().join("wpctl")) {
+    let identifiers = match App::identifiers(&dirs::config_dir().unwrap().join("wctl")) {
         Ok(x) => x,
         Err(e) => {
             eprintln!("Error when completing: {e}");

@@ -1,13 +1,15 @@
 use std::{
-    fs::{self, remove_file, File},
+    fs::{self, remove_dir_all, remove_file, File},
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use anyhow::anyhow;
-use git2::{Direction, Remote as git2_remote};
+use git2::{build::{CheckoutBuilder, RepoBuilder}, Direction, FetchOptions, MergeOptions, Remote as git2_remote, RemoteHead, Repository, RepositoryInitOptions};
 // Responsible for all repository related stuff, such as networking, reading remote host, etc.
 use serde::Deserialize;
+
+use crate::{app::App, utils::areusure};
 
 use super::wallpaper::WpManifest;
 
@@ -36,12 +38,12 @@ impl RepositoryManifest {
         // Initialize our return vector
         let mut return_vec: Vec<Self> = vec![];
 
-        for file in repo_dir_iter {
+        for dir in repo_dir_iter {
             // unwrap or continue on loop
-            if file.is_err() {
+            if dir.is_err() {
                 continue;
             }
-            let file_path = file.unwrap().path();
+            let file_path = dir.unwrap().path().join("manifest.toml");
             let content = fs::read_to_string(file_path)?;
             return_vec.push(toml::from_str(&content)?);
         }
@@ -56,7 +58,7 @@ impl RepositoryManifest {
         let location: PathBuf = config_dir
             .join("repositories")
             .join(format!("{}.toml", self.identifier));
-        remove_file(location)?;
+        remove_dir_all(location)?;
         return Ok(());
     }
 
@@ -66,18 +68,42 @@ impl RepositoryManifest {
 
         // Check if identifier is already installed
         if Self::identifiers(config_dir)?.contains(&manifest.identifier) {
-            return Err(anyhow!("Repository is already installed!"));
+            return Err(anyhow!("A repository with this ID already exists!"));
         };
 
-        let manifest_path: PathBuf = config_dir
+        /*match areusure(
+            format!(
+                "Are you sure you want to add this repository?\nName: {}\nRemote Url: {}\nID: {}",
+                manifest.name, manifest.git_url, manifest.identifier
+            ),
+            vec!['y', 'n'],
+            'y',
+        ) {
+            'n' => return Err(anyhow!("Cancelled")),
+            _ => (),
+        };*/
+
+        let repo_path: PathBuf = config_dir
             .join("repositories")
-            .join(format!("{}.toml", manifest.identifier));
-        let mut manifest_file: File = File::options()
+            .join(format!("{}", manifest.identifier));
+        /*let mut manifest_file: File = File::options()
             .write(true)
             .create(true)
             .truncate(true)
             .open(manifest_path)?;
-        manifest_file.write(rp.as_bytes())?;
+        manifest_file.write(rp.as_bytes())?;*/
+
+        /*let repo = Repository::init_opts(
+            manifest_path,
+            RepositoryInitOptions::new()
+                .mkdir(true)
+                .origin_url(&manifest.git_url)
+                .no_reinit(true)
+        )?;
+        repo.find_remote("origin")?.fetch(&["main"], Some(FetchOptions::new().depth(1)), None)?;*/
+        let mut fo: FetchOptions = FetchOptions::new();
+        fo.depth(1);
+        RepoBuilder::new().fetch_options(fo).clone(&manifest.git_url, repo_path.as_path())?;        
         Ok(())
     }
 
@@ -87,6 +113,24 @@ impl RepositoryManifest {
             nitems: 0,
             manifest: self.clone(),
         };
+    }
+    
+    pub fn load_packages(&self, app: &mut App) -> anyhow::Result<Vec<WpManifest>> {
+        let package_dir = app.config_path.join("repositories").join(&self.identifier);
+        let mut packages = vec![];
+        for package in fs::read_dir(package_dir)? {
+            if package.is_err() {
+                continue;
+            }
+            let package = package.unwrap();
+            if !package.file_name().into_string().unwrap().contains("toml") || package.file_name().into_string().unwrap().contains("manifest.toml") {
+                continue;
+            };
+            let content = fs::read_to_string(package.path())?;
+            packages.push(toml::from_str::<WpManifest>(&content)?);
+        };
+
+        Ok(packages)
     }
 
     // Needs to work without access to the app initialized, so needs to be a little longer
@@ -137,4 +181,10 @@ impl Remote {
         remote.disconnect()?;
         Ok(items)
     }
+
+    /*pub fn get_packages(&self) -> anyhow::Result<Vec<WpManifest>> {
+        
+        let mut final_items: Vec<WpManifest> = items.iter().map(|f| f.);
+        Ok(final_items)
+    }*/
 }

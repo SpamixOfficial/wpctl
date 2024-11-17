@@ -4,6 +4,10 @@
 
 This is the documentation for all repository related things, like the repository manfiest and wallpaper manfiests.
 
+## Best practices
+
+A repository should not contain anything else than manifests. If it does you shoul be aware that it will be fetched to every user
+
 ## Repository Manifest
 
 This manifest should be installed locally as a manifest file in the config directory.

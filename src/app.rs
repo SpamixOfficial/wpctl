@@ -10,7 +10,11 @@ use std::{
 use anyhow::anyhow;
 
 use crate::{
-    backend::{config::Config, repository::{Remote, RepositoryManifest}, wallpaper::WpManifest},
+    backend::{
+        config::Config,
+        repository::{Remote, RepositoryManifest},
+        wallpaper::WpManifest,
+    },
     ui::Page,
     utils::ehandle,
 };
@@ -21,8 +25,9 @@ pub struct App {
     pub approot: PathBuf,
     pub current_page: Page,
     pub is_setup: bool,
-    pub wp_items: Vec<WpManifest>,
-    pub repositories: Vec<Remote>,
+    pub wp_items: Vec<WpManifest>, // This contains all packages, fetched on startup. Might redo?
+    pub ui_list_items: Vec<(bool, WpManifest)>, // Current chosen item
+    pub repositories: Vec<RepositoryManifest>,
 }
 
 impl App {
@@ -30,11 +35,12 @@ impl App {
         // Creates the cursive root - required for every application.
         Self {
             config: Option::default(),
-            config_path: dirs::config_dir().unwrap().join("wpctl"),
-            approot: dirs::data_dir().unwrap().join("wpctl"),
+            config_path: dirs::config_dir().unwrap().join("wctl"),
+            approot: dirs::data_dir().unwrap().join("wctl"),
             current_page: Page::default(),
             is_setup: false,
             wp_items: vec![],
+            ui_list_items: vec![],
             repositories: vec![], // Not loaded on startup because we don't know if set up yet
         }
     }
@@ -51,13 +57,21 @@ impl App {
                 e
             }),
         );
-        
+
         if let Some(rp) = repositories {
-            let remotes: Vec<Remote> = rp.iter().map(|f| f.to_remote()).collect();
-            self.repositories = remotes
+            //let remotes: Vec<Remote> = rp.iter().map(|f| f.to_remote()).collect();
+            self.repositories = rp
         }
         // If not Some just return because something went wrong and mutating repositories at this
         // time is not good
+    }
+
+    pub fn load_packages(&mut self) -> anyhow::Result<()> {
+        for repo in self.repositories.clone() {
+            let mut repo_items = repo.load_packages(self)?;
+            self.wp_items.append(&mut repo_items);
+        }
+        Ok(())
     }
 
     /// Handles all of the needed setup functions, like checks and such!
@@ -71,8 +85,26 @@ impl App {
                 e
             }),
         );
-        // Load repositories (as remotes)
+        // Load repositories
         self.reload_repositories();
+
+        // Load packages
+        ehandle(
+            self.load_packages(),
+            None,
+            Some(|x| {
+                eprintln!("Failed to load packages");
+                x
+            }),
+        );
+
+        for (i, package) in self.wp_items.iter().enumerate() {
+            if i == 0 {
+                self.ui_list_items.push((true, package.clone()))
+            } else {
+                self.ui_list_items.push((false, package.clone()))
+            }
+        }
 
         self.is_setup = self.is_setup();
     }
@@ -148,10 +180,10 @@ impl App {
     pub fn remove_repo_id(&mut self, id: String) -> anyhow::Result<()> {
         let mut manifest: Option<RepositoryManifest> = None;
         for m in &self.repositories {
-            if m.manifest.identifier == id {
-                manifest = Some(m.manifest.clone());
+            if m.identifier == id {
+                manifest = Some(m.clone());
             }
-        }; 
+        }
 
         if let Some(m) = manifest {
             self.remove_repo(m)?;

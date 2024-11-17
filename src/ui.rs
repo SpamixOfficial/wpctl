@@ -8,7 +8,7 @@ use ratatui::{
     DefaultTerminal, Frame,
 };
 
-use crate::app::App;
+use crate::{app::App, backend::repository::Remote};
 
 pub fn run(mut app: App) -> anyhow::Result<()> {
     if !app.is_setup {
@@ -23,7 +23,7 @@ pub fn run(mut app: App) -> anyhow::Result<()> {
 
         terminal.draw(|frame| {
             // Get callback function and call function, looks cursed I know
-            app.current_page.func()(frame)
+            app.current_page.func()(frame, &mut app)
         })?;
 
         match post_draw_handle(&mut app) {
@@ -65,7 +65,7 @@ pub enum Page {
 }
 
 impl Page {
-    fn func(&self) -> fn(&mut Frame) {
+    fn func(&self) -> fn(&mut Frame, &mut App) {
         // Add all pages here!!
         let func = match self {
             Self::Default => Self::page_main,

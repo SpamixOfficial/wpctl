@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct WpManifest {
     pub name: String,
     pub description: String,
@@ -14,7 +14,7 @@ pub struct WpManifest {
 }
 
 // Most common screen aspect ratios
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub enum WpSizes {
     #[serde(rename = "1:1")]
     X1x1,

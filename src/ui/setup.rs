@@ -115,7 +115,7 @@ impl SetupPage {
             .areas(area);
 
         let block = Block::new()
-            .title_top(Line::from("Setup wpctl").centered())
+            .title_top(Line::from("Setup wctl").centered())
             .title_bottom(Line::from("Right to continue").centered())
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded);
@@ -138,7 +138,7 @@ impl SetupPage {
             .areas(area);
 
         let block = Block::new()
-            .title_top(Line::from("Setup wpctl").centered())
+            .title_top(Line::from("Setup wctl").centered())
             .title_bottom(Line::from("Right to continue").centered())
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded);
@@ -160,7 +160,7 @@ impl SetupPage {
             .areas(area);
 
         let block = Block::new()
-            .title_top(Line::from("Setup wpctl").centered())
+            .title_top(Line::from("Setup wctl").centered())
             .title_bottom(Line::from("Right to continue").centered())
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded);
