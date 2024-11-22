@@ -5,7 +5,11 @@ use std::{
 };
 
 use anyhow::anyhow;
-use git2::{build::{CheckoutBuilder, RepoBuilder}, Direction, FetchOptions, MergeOptions, Remote as git2_remote, RemoteHead, Repository, RepositoryInitOptions};
+use git2::{
+    build::{CheckoutBuilder, RepoBuilder},
+    Direction, FetchOptions, MergeOptions, Remote as git2_remote, RemoteHead, Repository,
+    RepositoryInitOptions,
+};
 // Responsible for all repository related stuff, such as networking, reading remote host, etc.
 use serde::Deserialize;
 
@@ -103,8 +107,45 @@ impl RepositoryManifest {
         repo.find_remote("origin")?.fetch(&["main"], Some(FetchOptions::new().depth(1)), None)?;*/
         let mut fo: FetchOptions = FetchOptions::new();
         fo.depth(1);
-        RepoBuilder::new().fetch_options(fo).clone(&manifest.git_url, repo_path.as_path())?;        
+        RepoBuilder::new()
+            .fetch_options(fo)
+            .clone(&manifest.git_url, repo_path.as_path())?;
         Ok(())
+    }
+
+    pub fn is_updated(&mut self, app: &mut App) -> anyhow::Result<bool> {
+        let package_dir = app.config_path.join("repositories").join(&self.identifier);
+        let repo = Repository::open(package_dir)?;
+
+        let mut fo: FetchOptions = FetchOptions::new();
+        fo.depth(1);
+        repo.find_remote("origin")?
+            .fetch(&["main"], Some(&mut fo), None)?;
+        let fetch_commit =
+            repo.reference_to_annotated_commit(&repo.find_reference("FETCH_HEAD")?)?;
+        let analysis = repo.merge_analysis(&[&fetch_commit])?;
+        Ok(analysis.0.is_up_to_date())
+    }
+
+    pub fn update(&mut self, app: &mut App) -> anyhow::Result<()> {
+        let package_dir = app.config_path.join("repositories").join(&self.identifier);
+        let repo = Repository::open(package_dir)?;
+
+        let mut fo: FetchOptions = FetchOptions::new();
+        fo.depth(1);
+        repo.find_remote("origin")?
+            .fetch(&["main"], Some(&mut fo), None)?;
+        let fetch_commit =
+            repo.reference_to_annotated_commit(&repo.find_reference("FETCH_HEAD")?)?;
+        if repo.merge_analysis(&[&fetch_commit])?.0.is_fast_forward() {
+            let mut reference = repo.find_reference("refs/heads/main")?;
+            reference.set_target(fetch_commit.id(), "Fast-Forward")?;
+            repo.set_head("refs/heads/main")?;
+            repo.checkout_head(Some(&mut git2::build::CheckoutBuilder::default()))?;
+        } else {
+            return Err(anyhow!("Already up-to-date!"));
+        };
+        return Ok(());
     }
 
     pub fn to_remote(&self) -> Remote {
@@ -114,7 +155,7 @@ impl RepositoryManifest {
             manifest: self.clone(),
         };
     }
-    
+
     pub fn load_packages(&self, app: &mut App) -> anyhow::Result<Vec<WpManifest>> {
         let package_dir = app.config_path.join("repositories").join(&self.identifier);
         let mut packages = vec![];
@@ -123,12 +164,18 @@ impl RepositoryManifest {
                 continue;
             }
             let package = package.unwrap();
-            if !package.file_name().into_string().unwrap().contains("toml") || package.file_name().into_string().unwrap().contains("manifest.toml") {
+            if !package.file_name().into_string().unwrap().contains("toml")
+                || package
+                    .file_name()
+                    .into_string()
+                    .unwrap()
+                    .contains("manifest.toml")
+            {
                 continue;
             };
             let content = fs::read_to_string(package.path())?;
             packages.push(toml::from_str::<WpManifest>(&content)?);
-        };
+        }
 
         Ok(packages)
     }
@@ -183,7 +230,7 @@ impl Remote {
     }
 
     /*pub fn get_packages(&self) -> anyhow::Result<Vec<WpManifest>> {
-        
+
         let mut final_items: Vec<WpManifest> = items.iter().map(|f| f.);
         Ok(final_items)
     }*/
