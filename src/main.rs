@@ -1,4 +1,5 @@
 use app::App;
+use backend::repository::RepositoryManifest;
 use clap::{Parser, Subcommand};
 use clap_complete::{ArgValueCompleter, CompletionCandidate};
 use std::process::exit;
@@ -25,6 +26,13 @@ enum Command {
     Install,
     #[command(long_about = "Add a repository from an URL pointing to a repository manifest")]
     AddRepo { url: String },
+    #[command(long_about = "Update selected repositories")]
+    UpdateRepos {
+        #[arg(add = ArgValueCompleter::new(identifier_clap_completer), help = "Package to remove, by identifier")]
+        identifiers: Vec<String>,
+    },
+    #[command(long_about = "Update all repositories")]
+    UpdateAllRepos,
     #[command(long_about = "Remove a local repository from an identifier")]
     RemoveRepo {
         #[arg(add = ArgValueCompleter::new(identifier_clap_completer), help = "Package to remove, by identifier")]
@@ -68,8 +76,52 @@ fn handle_cmd(args: Args, app: &mut App) {
             Command::AddRepo { url } => add_repo(app, url),
             Command::RemoveRepo { identifier } => remove_repo(app, identifier),
             Command::Identifiers => identifiers(app),
+            Command::UpdateRepos { identifiers } => command_update_repos(app, identifiers),
+            Command::UpdateAllRepos => command_update_all_repos(app),
         };
     }
+}
+
+fn command_update_all_repos(app: &mut App) {
+    match app.all_update_repo() {
+        Err(e) => {
+            eprintln!("[*] Error during updates of repositories: {}", e);
+            exit(1);
+        }
+        Ok(_) => {
+            println!("[*] Updates were successful!");
+            exit(0);
+        }
+    }
+}
+
+fn command_update_repos(app: &mut App, ids: Vec<String>) {
+    let manifests: Vec<RepositoryManifest> = app
+        .repositories
+        .iter()
+        .filter(|x| ids.contains(&x.identifier))
+        .map(|x| x.to_owned())
+        .collect();
+
+    if manifests.len() == 0 {
+        eprintln!("[*] No such identifiers");
+        exit(1);
+    }
+
+    for manifest in manifests {
+        match app.update_repo(manifest.clone()) {
+            Err(e) => {
+                eprintln!("[*] Error during updates of repositories: {}", e);
+                exit(1);
+            }
+            Ok(_) => {
+                println!("[*] Update of {} was successful!", manifest.name);
+                exit(0);
+            }
+        }
+    }
+    println!("[*] Updates were successful!");
+    exit(0);
 }
 
 fn command_install(app: &mut App) {

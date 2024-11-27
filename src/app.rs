@@ -170,6 +170,28 @@ impl App {
         Ok(())
     }
 
+    /// Update and reload ALL repositories
+    pub fn all_update_repo(&mut self) -> anyhow::Result<()> {
+        for mut repo in self.repositories.clone() {
+            if !repo.is_updated(self)? {
+                repo.update(self)?;
+            }
+        }
+        // Reload repositories after update
+        self.reload_repositories();
+        Ok(())
+    }
+
+    /// Update and reload ONE repository
+    pub fn update_repo(&mut self, mut manifest: RepositoryManifest) -> anyhow::Result<()> {
+        if !manifest.is_updated(self)? {
+            manifest.update(self)?;
+        }
+        // Reload repositories after update
+        self.reload_repositories();
+        Ok(())
+    }
+
     pub fn remove_repo(&mut self, manifest: RepositoryManifest) -> anyhow::Result<()> {
         manifest.remove(&self.config_path)?;
         self.reload_repositories();

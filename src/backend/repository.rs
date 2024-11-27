@@ -1,5 +1,5 @@
 use std::{
-    fs::{self, remove_dir_all, remove_file, File},
+    fs::{self, remove_dir_all, remove_file, File, FileType},
     io::{Read, Write},
     path::{Path, PathBuf},
 };
@@ -59,10 +59,11 @@ impl RepositoryManifest {
     /// Repositories should be reloaded after this, please use frontend function for cleaner
     /// interface
     pub fn remove(&self, config_dir: &PathBuf) -> anyhow::Result<()> {
-        let location: PathBuf = config_dir
-            .join("repositories")
-            .join(format!("{}.toml", self.identifier));
-        remove_dir_all(location)?;
+        let identifiers = Self::identifiers(config_dir)?;
+        if !identifiers.contains(&self.identifier) {
+            return Err(anyhow!("Repository wasn't found"));
+        };
+        remove_dir_all(config_dir.join("repositories").join(&self.identifier))?;
         return Ok(());
     }
 
@@ -90,6 +91,7 @@ impl RepositoryManifest {
         let repo_path: PathBuf = config_dir
             .join("repositories")
             .join(format!("{}", manifest.identifier));
+        let mut co = CheckoutBuilder::new();
         /*let mut manifest_file: File = File::options()
             .write(true)
             .create(true)
@@ -107,20 +109,24 @@ impl RepositoryManifest {
         repo.find_remote("origin")?.fetch(&["main"], Some(FetchOptions::new().depth(1)), None)?;*/
         let mut fo: FetchOptions = FetchOptions::new();
         fo.depth(1);
-        RepoBuilder::new()
-            .fetch_options(fo)
-            .clone(&manifest.git_url, repo_path.as_path())?;
+        let mut rp = RepoBuilder::new();
+        rp.fetch_options(fo);
+        rp.clone(&manifest.git_url, repo_path.as_path())?;
+        Repository::open(repo_path.as_path())?.checkout_head(Some(&mut co))?;
         Ok(())
     }
 
     pub fn is_updated(&mut self, app: &mut App) -> anyhow::Result<bool> {
+        dbg!("is_updated");
         let package_dir = app.config_path.join("repositories").join(&self.identifier);
         let repo = Repository::open(package_dir)?;
 
         let mut fo: FetchOptions = FetchOptions::new();
         fo.depth(1);
-        repo.find_remote("origin")?
-            .fetch(&["main"], Some(&mut fo), None)?;
+        repo.find_remote("origin")
+            .unwrap()
+            .fetch(&["main"], Some(&mut fo), None)
+            .unwrap();
         let fetch_commit =
             repo.reference_to_annotated_commit(&repo.find_reference("FETCH_HEAD")?)?;
         let analysis = repo.merge_analysis(&[&fetch_commit])?;
@@ -128,6 +134,7 @@ impl RepositoryManifest {
     }
 
     pub fn update(&mut self, app: &mut App) -> anyhow::Result<()> {
+        dbg!("woah");
         let package_dir = app.config_path.join("repositories").join(&self.identifier);
         let repo = Repository::open(package_dir)?;
 
