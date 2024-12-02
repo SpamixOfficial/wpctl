@@ -117,16 +117,12 @@ impl RepositoryManifest {
     }
 
     pub fn is_updated(&mut self, app: &mut App) -> anyhow::Result<bool> {
-        dbg!("is_updated");
         let package_dir = app.config_path.join("repositories").join(&self.identifier);
         let repo = Repository::open(package_dir)?;
 
         let mut fo: FetchOptions = FetchOptions::new();
-        fo.depth(1);
-        repo.find_remote("origin")
-            .unwrap()
-            .fetch(&["main"], Some(&mut fo), None)
-            .unwrap();
+        //fo.depth(1);
+        repo.find_remote("origin").unwrap().fetch(&["main"], Some(&mut fo), None)?;
         let fetch_commit =
             repo.reference_to_annotated_commit(&repo.find_reference("FETCH_HEAD")?)?;
         let analysis = repo.merge_analysis(&[&fetch_commit])?;
@@ -134,12 +130,11 @@ impl RepositoryManifest {
     }
 
     pub fn update(&mut self, app: &mut App) -> anyhow::Result<()> {
-        dbg!("woah");
         let package_dir = app.config_path.join("repositories").join(&self.identifier);
         let repo = Repository::open(package_dir)?;
 
         let mut fo: FetchOptions = FetchOptions::new();
-        fo.depth(1);
+        //fo.depth(1);
         repo.find_remote("origin")?
             .fetch(&["main"], Some(&mut fo), None)?;
         let fetch_commit =
