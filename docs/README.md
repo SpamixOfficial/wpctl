@@ -13,11 +13,13 @@ Take a look at the Navigation table down below 👇
 
 ## Type reference
 
-| Type   | Description       |
-| ------ | ----------------- |
-| string | String (duh)      |
-| [T]    | Array of T        |
-| WpSize | [WpSize](#wpsize) |
+| Type       | Description       |
+| ---------- | ----------------- |
+| string     | String (duh)      |
+| string/url | Url/link          |
+| [T]        | Array of T        |
+| WpSize     | [WpSize](#wpsize) |
+| Opt\<T\>     | Optional value    |
 
 ### WpSize
 

@@ -125,7 +125,7 @@ impl RepositoryManifest {
         repo.find_remote("origin").unwrap().fetch(&["main"], Some(&mut fo), None)?;
         let fetch_commit =
             repo.reference_to_annotated_commit(&repo.find_reference("FETCH_HEAD")?)?;
-        let analysis = repo.merge_analysis(&[&fetch_commit])?;
+        let analysis = repo.merge_analysis(&[&fetch_commit]).unwrap();
         Ok(analysis.0.is_up_to_date())
     }
 
@@ -140,7 +140,7 @@ impl RepositoryManifest {
         let fetch_commit =
             repo.reference_to_annotated_commit(&repo.find_reference("FETCH_HEAD")?)?;
         if repo.merge_analysis(&[&fetch_commit])?.0.is_fast_forward() {
-            let mut reference = repo.find_reference("refs/heads/main")?;
+        let mut reference = repo.find_reference("refs/heads/main")?;
             reference.set_target(fetch_commit.id(), "Fast-Forward")?;
             repo.set_head("refs/heads/main")?;
             repo.checkout_head(Some(&mut git2::build::CheckoutBuilder::default()))?;

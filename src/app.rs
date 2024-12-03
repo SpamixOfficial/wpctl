@@ -8,6 +8,10 @@ use std::{
 };
 
 use anyhow::anyhow;
+use ratatui_image::{
+    picker::{self, Picker},
+    protocol::StatefulProtocol,
+};
 
 use crate::{
     backend::{
@@ -27,12 +31,24 @@ pub struct App {
     pub is_setup: bool,
     pub wp_items: Vec<WpManifest>, // This contains all packages, fetched on startup. Might redo?
     pub ui_list_items: Vec<(bool, WpManifest)>, // Current chosen item
+    pub ui_current_thumbnail: StatefulProtocol, // Current thumbnail_url
     pub repositories: Vec<RepositoryManifest>,
 }
 
 impl App {
     pub fn new() -> Self {
-        // Creates the cursive root - required for every application.
+        let default_img = image::load_from_memory(include_bytes!("assets/default.png")).unwrap();
+        let picker = Picker::from_query_stdio();
+        let thumbnail = match picker {
+            Ok(mut x) => Some(x.new_resize_protocol(default_img)),
+            Err(e) => {
+                eprintln!(
+                    "Warning: you are using an unsupported terminal, no images will be displayed: {}", e
+                );
+                None
+            }
+        };
+        // Creates the ratatui root - required for every application.
         Self {
             config: Option::default(),
             config_path: dirs::config_dir().unwrap().join("wctl"),
@@ -41,6 +57,8 @@ impl App {
             is_setup: false,
             wp_items: vec![],
             ui_list_items: vec![],
+            ui_current_thumbnail: thumbnail.unwrap(), // This is initialized here because there's no other
+            // way to do it
             repositories: vec![], // Not loaded on startup because we don't know if set up yet
         }
     }

@@ -38,15 +38,16 @@ The manifests should use the toml filetype, follow the specification below and b
 
 ### Fields
 
-| Field         | Type       | Description                                                      |
-| ------------- | ---------- | ---------------------------------------------------------------- |
-| name          | string     | Name of the package                                              |
-| description   | string     | Description of the package                                       |
-| author        | [string]   | Author/authors of the wallpaper                                  |
-| maintainer    | string     | Name of package maintainer                                       |
-| thumbnail_url | string/url | Link to thumbnail_url of package, shown to users in detail panel |
-| download_url  | string/url | Link to package zip or image file                                |
-| sizes         | [WpSize]   | What aspect ratios the wallpaper support/work on                 |
+| Field         | Type              | Description                                                      |
+| ------------- | ----------------- | ---------------------------------------------------------------- |
+| name          | string            | Name of the package                                              |
+| description   | string            | Description of the package                                       |
+| author        | [string]          | Author/authors of the wallpaper                                  |
+| source        | Opt\<string/url\> | The source of the wallpaper, optional as source may not be known |
+| maintainer    | string            | Name of package maintainer                                       |
+| thumbnail_url | string/url        | Link to thumbnail_url of package, shown to users in detail panel |
+| download_url  | string/url        | Link to package zip or image file                                |
+| sizes         | [WpSize]          | What aspect ratios the wallpaper support/work on                 |
 
 For type references see the [README](./README.md)
 
