@@ -41,6 +41,7 @@ The manifests should use the toml filetype, follow the specification below and b
 | Field         | Type              | Description                                                      |
 | ------------- | ----------------- | ---------------------------------------------------------------- |
 | name          | string            | Name of the package                                              |
+| id            | string            | Identifier of the package                                        |
 | description   | string            | Description of the package                                       |
 | author        | [string]          | Author/authors of the wallpaper                                  |
 | source        | Opt\<string/url\> | The source of the wallpaper, optional as source may not be known |

@@ -92,23 +92,7 @@ impl RepositoryManifest {
             .join("repositories")
             .join(format!("{}", manifest.identifier));
         let mut co = CheckoutBuilder::new();
-        /*let mut manifest_file: File = File::options()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(manifest_path)?;
-        manifest_file.write(rp.as_bytes())?;*/
-
-        /*let repo = Repository::init_opts(
-            manifest_path,
-            RepositoryInitOptions::new()
-                .mkdir(true)
-                .origin_url(&manifest.git_url)
-                .no_reinit(true)
-        )?;
-        repo.find_remote("origin")?.fetch(&["main"], Some(FetchOptions::new().depth(1)), None)?;*/
-        let mut fo: FetchOptions = FetchOptions::new();
-        fo.depth(1);
+        let fo: FetchOptions = FetchOptions::new();
         let mut rp = RepoBuilder::new();
         rp.fetch_options(fo);
         rp.clone(&manifest.git_url, repo_path.as_path())?;
@@ -158,7 +142,7 @@ impl RepositoryManifest {
         };
     }
 
-    pub fn load_packages(&self, app: &mut App) -> anyhow::Result<Vec<WpManifest>> {
+    pub fn load_packages(&self, app: &mut App) -> anyhow::Result<Vec<(WpManifest, RepositoryManifest)>> {
         let package_dir = app.config_path.join("repositories").join(&self.identifier);
         let mut packages = vec![];
         for package in fs::read_dir(package_dir)? {
@@ -176,7 +160,7 @@ impl RepositoryManifest {
                 continue;
             };
             let content = fs::read_to_string(package.path())?;
-            packages.push(toml::from_str::<WpManifest>(&content)?);
+            packages.push((toml::from_str::<WpManifest>(&content)?, self.clone()));
         }
 
         Ok(packages)

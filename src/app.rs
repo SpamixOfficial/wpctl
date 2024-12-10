@@ -29,16 +29,16 @@ pub struct App {
     pub approot: PathBuf,
     pub current_page: Page,
     pub is_setup: bool,
-    pub wp_items: Vec<WpManifest>, // This contains all packages, fetched on startup. Might redo?
-    pub ui_list_items: Vec<(bool, WpManifest)>, // Current chosen item
-    pub ui_current_thumbnail: StatefulProtocol, // Current thumbnail_url
+    pub wp_items: Vec<(WpManifest, RepositoryManifest)>, // This contains all packages, fetched on startup. Might redo?
+    pub ui_list_items: Vec<(bool, WpManifest)>,          // Current chosen item
+    //pub ui_current_thumbnail: StatefulProtocol, // Current thumbnail_url
     pub repositories: Vec<RepositoryManifest>,
 }
 
 impl App {
     pub fn new() -> Self {
-        let default_img = image::load_from_memory(include_bytes!("assets/default.png")).unwrap();
-        let picker = Picker::from_query_stdio();
+        //let default_img = image::load_from_memory(include_bytes!("assets/default.png")).unwrap();
+        /*let picker = Picker::from_query_stdio();
         let thumbnail = match picker {
             Ok(mut x) => Some(x.new_resize_protocol(default_img)),
             Err(e) => {
@@ -47,7 +47,7 @@ impl App {
                 );
                 None
             }
-        };
+        };*/
         // Creates the ratatui root - required for every application.
         Self {
             config: Option::default(),
@@ -57,7 +57,7 @@ impl App {
             is_setup: false,
             wp_items: vec![],
             ui_list_items: vec![],
-            ui_current_thumbnail: thumbnail.unwrap(), // This is initialized here because there's no other
+            //ui_current_thumbnail: thumbnail.unwrap(), // This is initialized here because there's no other
             // way to do it
             repositories: vec![], // Not loaded on startup because we don't know if set up yet
         }
@@ -84,7 +84,10 @@ impl App {
         // time is not good
     }
 
+    /// Load packages
     pub fn load_packages(&mut self) -> anyhow::Result<()> {
+        // First clear so we don't get duplicates!
+        self.wp_items = vec![];
         for repo in self.repositories.clone() {
             let mut repo_items = repo.load_packages(self)?;
             self.wp_items.append(&mut repo_items);
@@ -118,9 +121,9 @@ impl App {
 
         for (i, package) in self.wp_items.iter().enumerate() {
             if i == 0 {
-                self.ui_list_items.push((true, package.clone()))
+                self.ui_list_items.push((true, package.0.clone()))
             } else {
-                self.ui_list_items.push((false, package.clone()))
+                self.ui_list_items.push((false, package.0.clone()))
             }
         }
 
@@ -150,7 +153,11 @@ impl App {
         }
 
         if !approot.try_exists().unwrap_or(false) {
-            create_dir_all(approot)?;
+            create_dir_all(&approot)?;
+        }
+
+        if !approot.join("packages").try_exists().unwrap_or(false) {
+            create_dir_all(&approot.join("packages"))?;
         }
 
         Ok(())

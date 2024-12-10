@@ -4,10 +4,11 @@ use ratatui::{
     style::{Style, Stylize},
     text::{Line, Span},
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WpManifest {
+    pub id: String,
     pub name: String,
     pub description: String,
     pub author: Vec<String>,
@@ -63,7 +64,7 @@ impl WpManifest {
 }
 
 // Most common screen aspect ratios
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum WpSizes {
     #[serde(rename = "1:1")]
     X1x1,
