@@ -1,9 +1,9 @@
 use app::App;
+use file_matcher::FileNamed;
 use backend::{repository::RepositoryManifest, wallpaper::WpManifest};
 use clap::{Parser, Subcommand};
 use clap_complete::{ArgValueCompleter, CompletionCandidate};
 use regex::Regex;
-use reqwest::StatusCode;
 use std::{
     fs::{create_dir_all, remove_dir_all, File},
     io::{copy, Cursor, Write},
@@ -52,6 +52,10 @@ enum Command {
         #[arg(short = 'R', long = "remove", help = "Remove package(s)", conflicts_with_all(["install", "query"]))]
         remove: Option<Vec<String>>,
     },
+    #[command(long_about = "Set the wallpaper using this command")]
+    Set {
+        package: String
+    },
     #[command(
         long_about = "Get repository identifiers. Use the repositories command for repository information"
     )]
@@ -93,6 +97,7 @@ fn handle_cmd(args: Args, app: &mut App) {
             Command::Identifiers => identifiers(app),
             Command::UpdateRepos { identifiers } => command_update_repos(app, identifiers),
             Command::UpdateAllRepos => command_update_all_repos(app),
+            Command::Set { package } => command_set_wallpaper(app, package),
             Command::Packages {
                 query,
                 install,
@@ -124,6 +129,18 @@ fn command_query_packages(app: &mut App, query: Regex) {
             r.identifier, f.name, f.description, f.thumbnail_url
         )
     });
+}
+
+fn command_set_wallpaper(app: &mut App, package: String) {
+    let path = app.approot.join("packages").join(&package);
+    if !path.try_exists().unwrap_or(false) {
+        eprintln!("[*] No such package installed: {}", &package);
+        exit(1);
+    };
+    let file = FileNamed::wildmatch("img.*").within(&path).find().unwrap();
+    wallpaper::set_from_path(file.to_str().unwrap()).unwrap();
+    wallpaper::set_mode(wallpaper::Mode::Center).unwrap();
+    println!("[*] Wallpaper was successfully set!")
 }
 
 fn command_remove_packages(app: &mut App, packages: Vec<String>) {
@@ -179,9 +196,9 @@ fn command_install_packages(app: &mut App, packages: Vec<String>) {
         };
 
         let url = url::Url::parse(&manifest.download_url).unwrap();
-        let file_name = url.path_segments().unwrap().last().unwrap();
+        let file_ext = std::path::Path::new(url.path_segments().unwrap().last().unwrap()).extension().unwrap().to_str().unwrap();
         let mut img_file =
-            File::create(app.approot.join("packages").join(&path).join(file_name)).unwrap();
+            File::create(app.approot.join("packages").join(&path).join(format!("img.{}", file_ext))).unwrap();
         copy(&mut Cursor::new(resp.bytes().unwrap()), &mut img_file).unwrap();
 
         println!("[*] Package {} was installed successfully!", path);
