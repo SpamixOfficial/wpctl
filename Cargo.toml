@@ -1,5 +1,7 @@
 [package]
 name = "wctl"
+description = "Wallpaper package manager written in rust"
+repository = "https://github.com/SpamixOfficial/wctl"
 version = "1.0.0"
 edition = "2021"
 license = "BSD-4-Clause"
